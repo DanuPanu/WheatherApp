@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Location from 'expo-location';
 import * as Font from 'expo-font';
-
+import {API_KEY} from "@env"
 
 const fetchFonts = () => {
   return Font.loadAsync({
@@ -16,10 +16,6 @@ const fetchFonts = () => {
     'Merriweather-Bold': require('./assets/fonts/Merriweather-Bold.ttf'),
   });
 };
-
-const API_KEY = process.env.API_KEY
-
-console.log(API_KEY)
 
 const WeatherApp: React.FC = () => {
 
