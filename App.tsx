@@ -8,8 +8,6 @@ import * as Location from 'expo-location';
 import * as Font from 'expo-font';
 import {API_KEY} from "@env"
 
-
-
 const fetchFonts = () => {
   return Font.loadAsync({
     'Karla-Regular': require('./assets/fonts/Karla-Regular.ttf'),
