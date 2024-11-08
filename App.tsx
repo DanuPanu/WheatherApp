@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import * as Location from 'expo-location';
 import * as Font from 'expo-font';
+import * as Updates from 'expo-updates';
 import {API_KEY} from "@env"
 
 const fetchFonts = () => {
@@ -18,6 +19,18 @@ const fetchFonts = () => {
 };
 
 const WeatherApp: React.FC = () => {
+
+  // saari
+  const [saari, setSaari] = useState<string>("")
+
+  // errorin nappi handleri
+  const handleRefresh = async () => {
+    try {
+      await Updates.reloadAsync();  // Tämä lataa sovelluksen uusiksi
+    } catch (error) {
+      console.error("Sovelluksen päivitys epäonnistui", error);
+    }
+  };
 
   fetchFonts();
 
@@ -77,6 +90,7 @@ const WeatherApp: React.FC = () => {
     } catch (err: any) {
       setError(err.message);
     } finally {
+      setSaari("")
       setLoading(false);
       setLataa(false);
     }
@@ -123,9 +137,54 @@ const WeatherApp: React.FC = () => {
       setText("")
 
     } catch (err: any) {
-      setError(err.message);
+      setError("Käytä vain pohjoismaiden kaupunkien nimiä!");
+    } finally {
+      setSaari("")
+      setLoading(false);
+    }
+  };
+
+
+  const fetchWeatherSaari = async () => {
+
+    setLataa(true)
+    const lat = 59.983692;
+    const lon = 22.114204;
+
+    //Openweathermapin API
+    try {
+      const response_saa = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+      );
+      if (!response_saa.ok) {
+        throw new Error('Sään haku epäonnistui');
+      }
+      const data = await response_saa.json();
+      setOpenWeather(data);
+      setOpenIconUri(`http://openweathermap.org/img/w/${data.weather[0].icon}.png`)
+
+      //yr.no API
+      const response_yrno = await fetch(`https://api.met.no/weatherapi/nowcast/2.0/complete?lat=${lat}&lon=${lon}`)
+      const data3 = await response_yrno.json()
+      const firstForecast = data3.properties.timeseries[0]
+      setTemperature(firstForecast.data.instant.details.air_temperature);
+      setWindSpeed(firstForecast.data.instant.details.wind_speed);
+      setWindSpeedGust(firstForecast.data.instant.details.wind_speed_of_gust);
+      setWindDirection(firstForecast.data.instant.details.wind_from_direction + 180);
+      setWeatherSymbol(firstForecast.data.next_1_hours.summary.symbol_code);
+
+      const date = new Date(data3.properties.timeseries[0].time)
+      const aika = date.toLocaleString()
+      setTime(aika)
+
+      setText("")
+
+    } catch (err: any) {
+      setError("Långörenin hakeminen epäonnistui!");
     } finally {
       setLoading(false);
+      setSaari("Långören")
+      setLataa(false)
     }
   };
 
@@ -145,7 +204,25 @@ const WeatherApp: React.FC = () => {
   }
 
   if (error) {
-    return <Text>Error: {error}</Text>;
+    return (
+      <>
+      <Provider>
+        <SafeAreaProvider>
+          <LinearGradient
+              style={{flex: 1}}
+              colors={['#faf0be', '#87CEEB']} // Auringonkeltainen -> vaaleansininen
+              start={{ x: 0, y: 0 }} // Alkaa ylhäältä (auringonkeltainen)
+              end={{ x: 0, y: 1 }}   // Päättyy alhaalta (sininen)
+              >
+            <View style={{display: "flex", justifyContent: "center", alignItems: "center"}}> 
+              <Text style={{marginTop: 150, textAlign: "center", fontFamily: "Karla-Bold", fontSize: 25, padding: 5}}>Virhe: {error}</Text>
+              <Button onPress={handleRefresh} mode='contained' style={{width: "70%", padding: 5, marginTop: 40}}>Takaisin</Button>
+            </View>  
+            </LinearGradient> 
+          </SafeAreaProvider>
+        </Provider>
+      </>
+  )
   }
 
   return (
@@ -172,11 +249,8 @@ const WeatherApp: React.FC = () => {
               <FAB size="medium" onPress={() => setAuki(true)} style={{ backgroundColor: "white"}} icon="magnify"></FAB>
             </View>
           </View>
-        
-          <Text style={{color: "red"}}>{error}</Text>
-        
           
-            <Text style={{textAlign: "center", fontSize: 25, margin: 10, fontFamily: "Karla-Bold"}}>{OpenWeather.name}</Text>
+            <Text style={{textAlign: "center", fontSize: 25, margin: 10, fontFamily: "Karla-Bold"}}>{!saari ? OpenWeather.name : saari}</Text>
             <Text style={{textAlign: "center", fontSize: 20, margin: 10, fontFamily: "Karla-Bold"}}>Päivä: {time?.split(", ")[0]} Kello: {time?.split(", ")[1].split(".")[0]}:{time?.split(", ")[1].split(".")[1]}</Text>
 
             <View style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
@@ -185,7 +259,7 @@ const WeatherApp: React.FC = () => {
 
             <View style={{paddingRight: 10, display: "flex", flexDirection: "row", gap: 10, marginTop: 10, marginBottom: 20}}>
               <View style={{width: "50%"}}>
-                <Card>
+                <Card style={{backgroundColor: "rgb(238, 241, 255)"}}>
                   <Text style={{margin: 13, fontSize: 20, fontFamily: "Karla-Regular"}}>OpenWeatherMap</Text>
                   <Card.Content>
                     <Text style={{fontFamily: "Karla-Regular", fontSize: 14, marginBottom: 10}}>Lämpötila: {OpenWeather?.main.temp}°C</Text>
@@ -206,7 +280,7 @@ const WeatherApp: React.FC = () => {
               </View>
 
               <View style={{width: "50%"}}>
-                <Card>
+                <Card style={{backgroundColor: "rgb(238, 241, 255)"}}>
                   <Text style={{margin: 13, fontSize: 20, fontFamily: "Karla-Regular"}}>Yr.No</Text>
                   <Card.Content>
                     <Text style={{fontFamily: "Karla-Regular", fontSize: 14, marginBottom: 10}}>Lämpötila: {temperature}°C</Text>
@@ -226,26 +300,15 @@ const WeatherApp: React.FC = () => {
                 </Card>
               </View>
             </View>
-            
+
+            <Button onPress={() => {fetchWeatherSaari()}} mode='contained' 
+              style={{padding: 5, marginTop: 10, shadowColor: "000", shadowOffset: {width: 0, height: 3}, shadowOpacity: 0.3, shadowRadius: 4}}
+              >Långörenin sää</Button>
+
             <Portal>
               <Dialog
                 visible={auki}
                 onDismiss={() => setAuki(false)}
-              >
-                <Dialog.Title style={{textAlign: "center"}}>Vaihda kaupunkia</Dialog.Title>
-                <Dialog.Content>
-                <TextInput value={text} onChangeText={(uusiTeksti : string) => setText(uusiTeksti)} style={{marginBottom: 10}} label="Kaupunki"/>
-                </Dialog.Content>
-                <Dialog.Actions style={{justifyContent: "center"}}>
-                  <Button onPress={() => fetchWeather()} style={{marginTop: 5, marginBottom: 10, padding: 5, width: "80%"}} mode='contained'>Vaihda kaupunkia</Button>
-                </Dialog.Actions>
-              </Dialog>
-            </Portal>
-
-            <Portal>
-              <Dialog
-                visible={lataa}
-                onDismiss={() => setLataa(false)}
               >
                 <Dialog.Title style={{textAlign: "center"}}>Vaihda kaupunkia</Dialog.Title>
                 <Dialog.Content>
