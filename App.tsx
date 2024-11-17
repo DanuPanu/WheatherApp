@@ -200,7 +200,7 @@ const WeatherApp: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+    return <ActivityIndicator size="large" color="white" />;
   }
 
   if (error) {
@@ -228,7 +228,7 @@ const WeatherApp: React.FC = () => {
   return (
   <>
   {lataa ? (
-      <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
+      <View style={{flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "white"}}>
         <ActivityIndicator animating={true} size="large" />
         <Text>Sijaintia haetaan...</Text>
       </View>
